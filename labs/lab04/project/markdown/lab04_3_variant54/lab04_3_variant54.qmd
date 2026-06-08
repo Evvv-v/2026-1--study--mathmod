@@ -1,0 +1,70 @@
+## Инициализация проекта
+
+```{julia}
+using DifferentialEquations
+using Plots
+
+gr()
+default(fmt = :png, size = (900, 450))
+```
+
+## Лабораторная работа №4
+## Вариант 54
+## Задача №1: осциллятор без затухания и без внешней силы
+Уравнение варианта: x'' + 9.9x = 0
+Начальные условия: x(0)=0.9, y(0)=0.9
+Интервал: t ∈ [0; 48], шаг 0.05
+
+## 1. Параметры модели
+
+```{julia}
+stiffness = 9.9           # коэффициент при x
+damping = 0.0             # затухания нет
+u0 = [0.9, 0.9]
+tspan = (0.0, 48.0)
+step = 0.05
+```
+
+## 2. Переход к системе первого порядка
+x' = y
+y' = -9.9x
+
+```{julia}
+function variant54_without_damping!(du, u, p, t)
+    x, y = u
+    du[1] = y
+    du[2] = -stiffness * x - damping * y
+end
+```
+
+## 3. Решение системы
+
+```{julia}
+prob = ODEProblem(variant54_without_damping!, u0, tspan)
+sol = solve(prob, Tsit5(), saveat=step)
+```
+
+## 4. Построение решения и фазового портрета
+
+```{julia}
+p_solution = plot(sol,
+    title="Вариант 54: без затухания",
+    xlabel="t",
+    ylabel="x(t), y(t)",
+    label=["x(t)" "y(t)"],
+    lw=2
+)
+
+p_phase = plot(sol,
+    vars=(1, 2),
+    title="Фазовый портрет",
+    xlabel="x",
+    ylabel="y = x'",
+    label="траектория",
+    lw=2
+)
+
+result_plot = plot(p_solution, p_phase, layout=(1, 2), size=(1000, 450))
+display(result_plot)
+```
+

@@ -1,0 +1,110 @@
+# ## Инициализация проекта
+# файл для задания из основного файла лабораторной работы
+# построение модели погони катера за лодкой в полярных координатах
+
+using DifferentialEquations
+using Plots
+
+default(fmt = :png)
+
+# ## Папка для сохранения графика
+script_name = "lab02_0_from_task"
+output_dir = joinpath(pwd(), "plots", script_name)
+mkpath(output_dir)
+
+# ## Постановка задачи
+# На море в тумане катер береговой охраны преследует лодку браконьеров.
+# Лодка обнаруживается на расстоянии k км от катера.
+# Скорость катера в n раз больше скорости лодки.
+# Необходимо построить траектории катера и лодки для двух случаев.
+
+# ## Параметры модели
+k = 12.0          # расстояние между катером и лодкой в момент обнаружения, км
+n = 4.0           # скорость катера в n раз больше скорости лодки
+fi = 3*pi/4       # направление движения лодки
+
+# ## Начальные расстояния для двух случаев
+# Случай 1: катер и лодка находятся по одну сторону от полюса
+# x / v = (k - x) / (n*v), отсюда x = k / (n + 1)
+r0_1 = k / (n + 1)
+
+# Случай 2: полюс находится между катером и лодкой
+# x / v = (k + x) / (n*v), отсюда x = k / (n - 1)
+r0_2 = k / (n - 1)
+
+# ## Дифференциальное уравнение
+# Радиальная скорость катера равна скорости лодки: dr/dt = v.
+# Полная скорость катера равна n*v.
+# Тангенциальная скорость равна sqrt((n*v)^2 - v^2) = v*sqrt(n^2 - 1).
+# Поэтому dθ/dt = v*sqrt(n^2 - 1) / r.
+# После исключения времени получаем: dr/dθ = r / sqrt(n^2 - 1).
+function f(r, p, theta)
+    return r / sqrt(n^2 - 1)
+end
+
+# ## Решение задачи
+
+# ### Случай 1
+# Начальные условия: θ0 = 0, r0 = k / (n + 1)
+tspan1 = (0.0, 2*pi)
+prob1 = ODEProblem(f, r0_1, tspan1)
+sol1 = solve(prob1, Tsit5(), saveat = 0.01)
+
+# ### Случай 2
+# Начальные условия: θ0 = -π, r0 = k / (n - 1)
+tspan2 = (-pi, pi)
+prob2 = ODEProblem(f, r0_2, tspan2)
+sol2 = solve(prob2, Tsit5(), saveat = 0.01)
+
+# ## Поиск точки пересечения
+# Лодка движется по лучу θ = fi, поэтому точка пересечения находится при θ = fi.
+r_meet1 = sol1(fi)
+r_meet2 = sol2(fi)
+
+println("Параметры задачи: k = ", k, " км, n = ", n)
+println("Начальное расстояние для случая 1: r0 = ", round(r0_1, digits = 3), " км")
+println("Начальное расстояние для случая 2: r0 = ", round(r0_2, digits = 3), " км")
+println("Точка пересечения 1: r = ", round(r_meet1, digits = 3), " км, θ = ", round(fi, digits = 3))
+println("Точка пересечения 2: r = ", round(r_meet2, digits = 3), " км, θ = ", round(fi, digits = 3))
+
+# ## Визуализация
+plot_limit = ceil(maximum([maximum(sol1.u), maximum(sol2.u), r_meet1, r_meet2]) + 5)
+theta_boat = [fi, fi]
+r_boat = [0, plot_limit]
+
+# График для первого случая
+p1 = plot(sol1.t, sol1.u,
+          proj = :polar,
+          lims = (0, plot_limit),
+          title = "Случай 1",
+          label = "Катер",
+          lw = 2)
+plot!(p1, theta_boat, r_boat,
+      label = "Лодка",
+      linestyle = :dash,
+      color = :red)
+scatter!(p1, [fi], [r_meet1],
+         label = "Пересечение",
+         markersize = 4)
+
+# График для второго случая
+p2 = plot(sol2.t, sol2.u,
+          proj = :polar,
+          lims = (0, plot_limit),
+          title = "Случай 2",
+          label = "Катер",
+          lw = 2)
+plot!(p2, theta_boat, r_boat,
+      label = "Лодка",
+      linestyle = :dash,
+      color = :red)
+scatter!(p2, [fi], [r_meet2],
+         label = "Пересечение",
+         markersize = 4)
+
+# Объединение графиков
+final_plot = plot(p1, p2, layout = (1, 2), size = (1000, 500))
+
+# ## Сохранение результата
+savefig(final_plot, joinpath(output_dir, "pursuit_from_task.png"))
+final_plot

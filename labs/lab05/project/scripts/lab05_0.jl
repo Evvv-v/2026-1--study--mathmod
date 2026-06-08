@@ -1,0 +1,92 @@
+# ## Лабораторная работа №5. Модель хищник-жертва
+# ## Общее задание из файла лабораторной работы
+
+using DifferentialEquations
+using Plots
+
+# настройки графики
+gr()
+default(fmt = :png, size = (900, 650), titlefont = font(10))
+
+# функция ищет уже существующую папку plots
+# новая папка plots не создается
+function find_plots_dir()
+    candidates = [
+        joinpath(pwd(), "plots"),
+        joinpath(dirname(pwd()), "plots"),
+        joinpath(dirname(dirname(pwd())), "plots")
+    ]
+
+    for path in candidates
+        if isdir(path)
+            return path
+        end
+    end
+
+    error("Папка plots не найдена. Запусти скрипт из project или из project/scripts")
+end
+
+plots_dir = find_plots_dir()
+
+# ## 1. Параметры модели
+# x(t) - численность хищников
+# y(t) - численность жертв
+# модель: x' = -a*x + b*x*y, y' = c*y - d*x*y
+
+a = 0.2    # коэффициент естественной смертности хищников
+b = 0.05   # коэффициент прироста хищников за счет охоты
+c = 0.5    # коэффициент естественного прироста жертв
+d = 0.02   # коэффициент смертности жертв от хищников
+
+u0 = [5.0, 10.0]      # начальные условия [хищники, жертвы]
+tspan = (0.0, 400.0) # интервал моделирования
+
+# стационарное состояние системы
+# из условий -a*x + b*x*y = 0 и c*y - d*x*y = 0
+x_stationary = c / d # численность хищников в равновесии
+y_stationary = a / b # численность жертв в равновесии
+
+println("Стационарное состояние системы:")
+println("x* = ", round(x_stationary, digits = 3), " - хищники")
+println("y* = ", round(y_stationary, digits = 3), " - жертвы")
+
+# ## 2. Определение системы уравнений
+function lotka_volterra!(du, u, p, t)
+    x, y = u
+    du[1] = -a * x + b * x * y
+    du[2] =  c * y - d * x * y
+end
+
+# ## 3. Решение системы
+prob = ODEProblem(lotka_volterra!, u0, tspan)
+sol = solve(prob, Tsit5(), saveat = 0.1)
+
+# ## 4. Визуализация
+# графики изменения численности хищников и жертв во времени
+p1 = plot(sol,
+    title = "Динамика популяций (общее задание)",
+    xlabel = "Время t",
+    ylabel = "Численность",
+    label = ["Хищники x(t)" "Жертвы y(t)"],
+    lw = 2)
+
+# фазовый портрет: зависимость численности хищников от численности жертв
+p2 = plot(sol, vars = (2, 1),
+    title = "Фазовый портрет (общее задание)",
+    xlabel = "Численность жертв y",
+    ylabel = "Численность хищников x",
+    label = "Траектория",
+    lw = 2)
+
+scatter!(p2,
+    [y_stationary],
+    [x_stationary],
+    label = "Стац. точка A($(round(x_stationary, digits = 2)); $(round(y_stationary, digits = 2)))",
+    markersize = 5)
+
+layout = plot(p1, p2, layout = (2, 1))
+display(layout)
+
+# ## 5. Сохранение результата в уже существующую папку plots
+savefig(layout, joinpath(plots_dir, "lab05_0_general_predator_prey.png"))
+println("График сохранен в: ", joinpath(plots_dir, "lab05_0_general_predator_prey.png"))

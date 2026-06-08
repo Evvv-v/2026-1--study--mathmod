@@ -1,0 +1,103 @@
+# ## Лабораторная работа №6. Задача об эпидемии
+# вариант 54
+
+using Pkg
+Pkg.activate(normpath(joinpath(@__DIR__, "..")))
+
+using DifferentialEquations
+using Plots
+
+# настройки графики
+gr()
+default(fmt = :png, size = (850, 800), titlefont = font(10))
+
+# функция ищет уже существующую папку plots и не создает новые каталоги
+function find_plots_dir()
+    candidates = [
+        joinpath(@__DIR__, "..", "plots"),
+        joinpath(@__DIR__, "plots"),
+        joinpath(pwd(), "plots"),
+        joinpath(pwd(), "..", "plots")
+    ]
+
+    for dir in candidates
+        if isdir(dir)
+            return normpath(dir)
+        end
+    end
+
+    error("Не найдена существующая папка plots. Поместите скрипт в project/scripts или запустите его из каталога project")
+end
+
+plots_dir = find_plots_dir()
+
+# ## 1. Параметры варианта 54
+N = 8439.0            # общая численность популяции на острове
+I0 = 86.0             # заболевшие в начальный момент времени
+R0 = 25.0             # здоровые с иммунитетом
+S0 = N - I0 - R0      # восприимчивые к болезни, но пока здоровые
+u0 = [S0, I0, R0]
+
+alpha = 0.01          # коэффициент заболеваемости
+beta = 0.02           # коэффициент выздоровления
+
+# пороговые значения выбраны так, чтобы явно рассмотреть оба случая из задания
+I_star_case1 = 100.0  # I(0) <= I*
+I_star_case2 = 70.0   # I(0) > I*
+
+tspan = (0.0, 60.0)
+
+println("Вариант 54")
+println("S(0) = ", S0, ", I(0) = ", I0, ", R(0) = ", R0)
+println("Случай 1: I(0) = ", I0, " <= I* = ", I_star_case1)
+println("Случай 2: I(0) = ", I0, " > I* = ", I_star_case2)
+
+# ## 2. Определение функций системы
+
+# Случай 1: I(t) <= I* — больные изолированы, заражение не идет
+function epidemic_case1!(du, u, p, t)
+    S, I, R = u
+    du[1] = 0
+    du[2] = -beta * I
+    du[3] = beta * I
+end
+
+# Случай 2: I(t) > I* — инфекция распространяется
+function epidemic_case2!(du, u, p, t)
+    S, I, R = u
+    du[1] = -alpha * S
+    du[2] = alpha * S - beta * I
+    du[3] = beta * I
+end
+
+# ## 3. Решение
+prob1 = ODEProblem(epidemic_case1!, u0, tspan)
+sol1 = solve(prob1, Tsit5(), saveat = 0.1)
+
+prob2 = ODEProblem(epidemic_case2!, u0, tspan)
+sol2 = solve(prob2, Tsit5(), saveat = 0.1)
+
+# ## 4. Визуализация
+p1 = plot(sol1,
+    title = "Эпидемия при I(0) ≤ I* (Вариант 54)",
+    xlabel = "Время t",
+    ylabel = "Численность",
+    label = ["S(t) - восприимчивые" "I(t) - инфицированные" "R(t) - иммунитет"],
+    lw = 2
+)
+
+p2 = plot(sol2,
+    title = "Эпидемия при I(0) > I* (Вариант 54)",
+    xlabel = "Время t",
+    ylabel = "Численность",
+    label = ["S(t) - восприимчивые" "I(t) - инфицированные" "R(t) - иммунитет"],
+    lw = 2
+)
+
+layout = plot(p1, p2, layout = (2, 1), size = (850, 800))
+display(layout)
+
+# ## 5. Сохранение результатов
+save_path = joinpath(plots_dir, "lab06_1_variant54_epidemic.png")
+savefig(layout, save_path)
+println("График сохранен: ", save_path)

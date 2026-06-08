@@ -1,0 +1,68 @@
+## Инициализация проекта
+
+```{julia}
+using DifferentialEquations
+using Plots
+
+gr()
+default(fmt = :png, size = (900, 450))
+```
+
+## Лабораторная работа №4
+## Задача №1: гармонический осциллятор без затухания и без внешней силы
+Уравнение: x'' + w0^2*x = 0
+Переход к системе первого порядка:
+x' = y
+y' = -w0^2*x
+
+## 1. Параметры модели
+
+```{julia}
+w0 = 2.0                  # собственная частота
+u0 = [0.0, 1.0]           # начальные условия: x(0)=0, y(0)=1
+tspan = (0.0, 15.0)
+step = 0.05
+```
+
+## 2. Определение системы
+
+```{julia}
+function oscillator_without_damping!(du, u, p, t)
+    x, y = u
+    du[1] = y
+    du[2] = -w0^2 * x
+end
+```
+
+## 3. Решение системы
+
+```{julia}
+prob = ODEProblem(oscillator_without_damping!, u0, tspan)
+sol = solve(prob, Tsit5(), saveat=step)
+```
+
+## 4. Построение решения и фазового портрета
+
+```{julia}
+p_solution = plot(sol,
+    title="Решение: без затухания",
+    xlabel="t",
+    ylabel="x(t), y(t)",
+    label=["x(t)" "y(t)"],
+    lw=2
+)
+
+p_phase = plot(sol,
+    vars=(1, 2),
+    title="Фазовый портрет",
+    xlabel="x",
+    ylabel="y = x'",
+    label="траектория",
+    lw=2
+)
+
+result_plot = plot(p_solution, p_phase, layout=(1, 2), size=(1000, 450))
+display(result_plot)
+```
+
+

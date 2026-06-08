@@ -1,0 +1,89 @@
+using Pkg
+Pkg.activate(normpath(joinpath(@__DIR__, "..")))
+
+using DifferentialEquations
+using Plots
+
+gr()
+default(fmt = :png, size = (850, 800), titlefont = font(10))
+
+function find_plots_dir()
+    candidates = [
+        joinpath(@__DIR__, "..", "plots"),
+        joinpath(@__DIR__, "plots"),
+        joinpath(pwd(), "plots"),
+        joinpath(pwd(), "..", "plots")
+    ]
+
+    for dir in candidates
+        if isdir(dir)
+            return normpath(dir)
+        end
+    end
+
+    error("Не найдена существующая папка plots. Поместите скрипт в project/scripts или запустите его из каталога project")
+end
+
+plots_dir = find_plots_dir()
+
+N = 3000.0            # общая численность популяции
+I0 = 90.0             # заболевшие в начальный момент времени
+R0 = 10.0             # здоровые с иммунитетом
+S0 = N - I0 - R0      # восприимчивые к болезни, но пока здоровые
+u0 = [S0, I0, R0]
+
+alpha = 0.01          # коэффициент заболеваемости
+beta = 0.02           # коэффициент выздоровления
+
+I_star_case1 = 100.0  # для случая I(0) <= I*
+I_star_case2 = 50.0   # для случая I(0) > I*
+
+tspan = (0.0, 200.0)
+
+println("Общее задание")
+println("S(0) = ", S0, ", I(0) = ", I0, ", R(0) = ", R0)
+println("Случай 1: I(0) = ", I0, " <= I* = ", I_star_case1)
+println("Случай 2: I(0) = ", I0, " > I* = ", I_star_case2)
+
+function epidemic_case1!(du, u, p, t)
+    S, I, R = u
+    du[1] = 0
+    du[2] = -beta * I
+    du[3] = beta * I
+end
+
+function epidemic_case2!(du, u, p, t)
+    S, I, R = u
+    du[1] = -alpha * S
+    du[2] = alpha * S - beta * I
+    du[3] = beta * I
+end
+
+prob1 = ODEProblem(epidemic_case1!, u0, tspan)
+sol1 = solve(prob1, Tsit5(), saveat = 0.1)
+
+prob2 = ODEProblem(epidemic_case2!, u0, tspan)
+sol2 = solve(prob2, Tsit5(), saveat = 0.1)
+
+p1 = plot(sol1,
+    title = "Эпидемия: I(0) ≤ I*",
+    xlabel = "Время t",
+    ylabel = "Численность",
+    label = ["S(t) - восприимчивые" "I(t) - инфицированные" "R(t) - иммунитет"],
+    lw = 2
+)
+
+p2 = plot(sol2,
+    title = "Эпидемия: I(0) > I*",
+    xlabel = "Время t",
+    ylabel = "Численность",
+    label = ["S(t) - восприимчивые" "I(t) - инфицированные" "R(t) - иммунитет"],
+    lw = 2
+)
+
+layout = plot(p1, p2, layout = (2, 1), size = (850, 800))
+display(layout)
+
+save_path = joinpath(plots_dir, "lab06_0_general_epidemic.png")
+savefig(layout, save_path)
+println("График сохранен: ", save_path)

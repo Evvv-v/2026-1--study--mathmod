@@ -1,0 +1,103 @@
+## Лабораторная работа №6. Задача об эпидемии
+вариант 54
+
+```{julia}
+using Pkg
+Pkg.activate(normpath(joinpath(@__DIR__, "..")))
+
+using DifferentialEquations
+using Plots
+```
+
+настройки графики
+
+```{julia}
+gr()
+default(fmt = :png, size = (850, 800), titlefont = font(10))
+```
+
+## 1. Параметры варианта 54
+
+```{julia}
+N = 8439.0            # общая численность популяции на острове
+I0 = 86.0             # заболевшие в начальный момент времени
+R0 = 25.0             # здоровые с иммунитетом
+S0 = N - I0 - R0      # восприимчивые к болезни, но пока здоровые
+u0 = [S0, I0, R0]
+
+alpha = 0.01          # коэффициент заболеваемости
+beta = 0.02           # коэффициент выздоровления
+```
+
+пороговые значения выбраны так, чтобы явно рассмотреть оба случая из задания
+
+```{julia}
+I_star_case1 = 100.0  # I(0) <= I*
+I_star_case2 = 70.0   # I(0) > I*
+
+tspan = (0.0, 60.0)
+
+println("Вариант 54")
+println("S(0) = ", S0, ", I(0) = ", I0, ", R(0) = ", R0)
+println("Случай 1: I(0) = ", I0, " <= I* = ", I_star_case1)
+println("Случай 2: I(0) = ", I0, " > I* = ", I_star_case2)
+```
+
+## 2. Определение функций системы
+
+Случай 1: I(t) <= I* — больные изолированы, заражение не идет
+
+```{julia}
+function epidemic_case1!(du, u, p, t)
+    S, I, R = u
+    du[1] = 0
+    du[2] = -beta * I
+    du[3] = beta * I
+end
+```
+
+Случай 2: I(t) > I* — инфекция распространяется
+
+```{julia}
+function epidemic_case2!(du, u, p, t)
+    S, I, R = u
+    du[1] = -alpha * S
+    du[2] = alpha * S - beta * I
+    du[3] = beta * I
+end
+```
+
+## 3. Решение
+
+```{julia}
+prob1 = ODEProblem(epidemic_case1!, u0, tspan)
+sol1 = solve(prob1, Tsit5(), saveat = 0.1)
+
+prob2 = ODEProblem(epidemic_case2!, u0, tspan)
+sol2 = solve(prob2, Tsit5(), saveat = 0.1)
+```
+
+## 4. Визуализация
+
+```{julia}
+p1 = plot(sol1,
+    title = "Эпидемия при I(0) ≤ I* (Вариант 54)",
+    xlabel = "Время t",
+    ylabel = "Численность",
+    label = ["S(t) - восприимчивые" "I(t) - инфицированные" "R(t) - иммунитет"],
+    lw = 2
+)
+
+p2 = plot(sol2,
+    title = "Эпидемия при I(0) > I* (Вариант 54)",
+    xlabel = "Время t",
+    ylabel = "Численность",
+    label = ["S(t) - восприимчивые" "I(t) - инфицированные" "R(t) - иммунитет"],
+    lw = 2
+)
+
+layout = plot(p1, p2, layout = (2, 1), size = (850, 800))
+display(layout)
+```
+
+
