@@ -52,11 +52,11 @@ license: "CC BY"
 
 # Задача №1
 
-{{< include ../project/markdown/lab06_0/lab06_0.qmd >}}
+{{< include ../project/markdown/lab08_0/lab08_0.qmd >}}
 
 # Задача №2
 
-{{< include ../project/markdown/lab06_1/lab06_1.qmd >}}
+{{< include ../project/markdown/lab08_1/lab08_1.qmd >}}
 
 # Выводы
 

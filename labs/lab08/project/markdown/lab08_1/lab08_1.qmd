@@ -2,35 +2,6 @@
 using Pkg
 ```
 
-активируем проект, если скрипт лежит внутри lab08/project или lab08/project/scripts
-
-```{julia}
-function find_project_dir()
-    candidates = [
-        abspath(joinpath(@__DIR__, "..")),
-        abspath(@__DIR__),
-        abspath(joinpath(pwd(), "..")),
-        abspath(pwd())
-    ]
-    for dir in candidates
-        if isdir(joinpath(dir, "plots"))
-            return dir
-        end
-    end
-    error("Не найдена существующая папка plots. Запусти скрипт из каталога lab08/project/scripts или lab08/project")
-end
-
-project_dir = find_project_dir()
-Pkg.activate(project_dir)
-
-using DifferentialEquations
-using Plots
-
-gr()
-default(fmt = :png, size = (850, 650), titlefont = font(10))
-plots_dir = joinpath(project_dir, "plots")
-```
-
 ================================================================
 Лабораторная работа №8
 Вариант 54
@@ -146,7 +117,6 @@ final_plot = plot(plt1, plt2, layout = (2, 1), size = (850, 750))
 display(final_plot)
 
 save_path = joinpath(plots_dir, "lab08_variant54_competition.png")
-savefig(final_plot, save_path)
 println("График сохранен: ", save_path)
 ```
 
